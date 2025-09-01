@@ -42,7 +42,6 @@ function App() {
           <Routes>
             <Route path="/" element={<SplashScreen />} />
             <Route path="/home" element={<Home />} />
-            <Route path="/:id" element={<AnimeInfo />} />
             <Route path="/watch/:id" element={<Watch />} />
             <Route path="/random" element={<AnimeInfo random={true} />} />
             <Route path="/404-not-found-page" element={<Error error="404" />} />
@@ -50,6 +49,8 @@ function App() {
             <Route path="/terms-of-service" element={<Terms />} />
             <Route path="/dmca" element={<DMCA />} />
             <Route path="/contact" element={<Contact />} />
+            <Route path="/producer/:id" element={<Producer />} />
+            <Route path="/search" element={<Search />} />
             {/* Render category routes */}
             {categoryRoutes.map((path) => (
               <Route
@@ -68,8 +69,8 @@ function App() {
                 element={<AtoZ path={path} />}
               />
             ))}
-            <Route path="/producer/:id" element={<Producer />} />
-            <Route path="/search" element={<Search />} />
+            {/* Dynamic anime info route - must be last */}
+            <Route path="/:id" element={<AnimeInfo />} />
             {/* Catch-all route for 404 */}
             <Route path="*" element={<Error error="404" />} />
           </Routes>
