@@ -93,10 +93,12 @@ export default function Player({
 
   // Handle multiplayer video sync
   useEffect(() => {
-    if (shouldSyncVideo && roomVideoState && !isHost && artRef.current) {
+    if (shouldSyncVideo && roomVideoState && artRef.current) {
       const art = artRef.current;
       if (!art) return;
 
+      // Prevent sync loops
+      isUpdatingFromSync.current = true;
       setShouldSyncVideo(false);
 
       switch (roomVideoState.type) {
@@ -106,15 +108,26 @@ export default function Player({
           if (timeDiff > 2) {
             art.currentTime = roomVideoState.currentTime;
           }
-          art.play();
+          if (!isHost) {
+            art.play();
+          }
           break;
         case "pause":
-          art.pause();
+          if (!isHost) {
+            art.pause();
+          }
           break;
         case "seek":
-          art.currentTime = roomVideoState.currentTime;
+          if (!isHost) {
+            art.currentTime = roomVideoState.currentTime;
+          }
           break;
       }
+
+      // Reset sync flag after a short delay
+      setTimeout(() => {
+        isUpdatingFromSync.current = false;
+      }, 200);
     }
   }, [shouldSyncVideo, roomVideoState, isHost, setShouldSyncVideo]);
 
@@ -267,18 +280,18 @@ export default function Player({
       type: "m3u8",
       autoplay: autoPlay,
       volume: 1,
-      setting: true,
-      playbackRate: true,
-      pip: true,
-      hotkey: false,
-      fullscreen: true,
+      setting: isInRoom && !isHost ? false : true,
+      playbackRate: isInRoom && !isHost ? false : true,
+      pip: isInRoom && !isHost ? false : true,
+      hotkey: isInRoom && !isHost ? false : false,
+      fullscreen: isInRoom && !isHost ? false : true,
       mutex: true,
       playsInline: true,
-      lock: true,
-      airplay: true,
+      lock: isInRoom && !isHost ? true : true,
+      airplay: isInRoom && !isHost ? false : true,
       autoOrientation: true,
-      fastForward: true,
-      aspectRatio: true,
+      fastForward: isInRoom && !isHost ? false : true,
+      aspectRatio: isInRoom && !isHost ? false : true,
       moreVideoAttr: {
         crossOrigin: 'anonymous',
         preload: 'none',
@@ -329,25 +342,29 @@ export default function Player({
             height: "100%",
             transform: "translateX(-50%)",
           },
-          disable: !Artplayer.utils.isMobile,
-          click: () => art.toggle(),
+          disable: !Artplayer.utils.isMobile || (isInRoom && !isHost),
+          click: () => !isInRoom || isHost ? art.toggle() : null,
         },
         {
           name: "rewind",
           html: "",
           style: { position: "absolute", left: 0, top: 0, width: "40%", height: "100%" },
-          disable: !Artplayer.utils.isMobile,
+          disable: !Artplayer.utils.isMobile || (isInRoom && !isHost),
           click: () => {
-            art.controls.show = !art.controls.show;
+            if (!isInRoom || isHost) {
+              art.controls.show = !art.controls.show;
+            }
           },
         },
         {
           name: "forward",
           html: "",
           style: { position: "absolute", right: 0, top: 0, width: "40%", height: "100%" },
-          disable: !Artplayer.utils.isMobile,
+          disable: !Artplayer.utils.isMobile || (isInRoom && !isHost),
           click: () => {
-            art.controls.show = !art.controls.show;
+            if (!isInRoom || isHost) {
+              art.controls.show = !art.controls.show;
+            }
           },
         },
         {
@@ -469,7 +486,11 @@ export default function Player({
       ];
       autoSkipIntro && art.plugins.add(autoSkip(skipRanges));
 
-      document.addEventListener("keydown", (event) => handleKeydown(event, art));
+      document.addEventListener("keydown", (event) => {
+        // Disable keyboard shortcuts for joiners in multiplayer
+        if (isInRoom && !isHost) return;
+        handleKeydown(event, art);
+      });
 
       art.subtitle.style({
         fontSize: (art.width > 500 ? art.width * 0.02 : art.width * 0.03) + "px",
@@ -484,7 +505,7 @@ export default function Player({
       }
       const $rewind = art.layers["rewind"];
       const $forward = art.layers["forward"];
-      Artplayer.utils.isMobile &&
+      Artplayer.utils.isMobile && (!isInRoom || isHost) &&
         art.proxy($rewind, "dblclick", () => {
           art.currentTime = Math.max(0, art.currentTime - 10);
           art.layers["backwardIcon"].style.opacity = 1;
@@ -492,7 +513,7 @@ export default function Player({
             art.layers["backwardIcon"].style.opacity = 0;
           }, 300);
         });
-      Artplayer.utils.isMobile &&
+      Artplayer.utils.isMobile && (!isInRoom || isHost) &&
         art.proxy($forward, "dblclick", () => {
           art.currentTime = Math.max(0, art.currentTime + 10);
           art.layers["forwardIcon"].style.opacity = 1;
