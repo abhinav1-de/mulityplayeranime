@@ -38,23 +38,57 @@ export const MultiplayerProvider = ({ children }) => {
   }, [nickname]);
 
   useEffect(() => {
-    // Initialize socket connection to Railway server
-    const serverUrl = 'https://server-bkur.onrender.com/';
-    const newSocket = io(serverUrl);
+    // Initialize socket connection to multiplayer server
+    const serverUrl = import.meta.env.VITE_MULTIPLAYER_SERVER_URL || 'https://server-bkur.onrender.com';
+    const newSocket = io(serverUrl, {
+      reconnection: true,
+      reconnectionAttempts: 5,
+      reconnectionDelay: 1000,
+      timeout: 20000
+    });
     
     newSocket.on('connect', () => {
       setIsConnected(true);
       console.log('Connected to multiplayer server');
+      
+      // If we were in a room before disconnect, try to maintain connection
+      const currentRoomCode = roomCode;
+      if (currentRoomCode && !isInRoom) {
+        console.log('Attempting to rejoin room after reconnect:', currentRoomCode);
+        // Don't auto-rejoin to avoid conflicts, just log for debugging
+      }
     });
 
-    newSocket.on('disconnect', () => {
+    newSocket.on('disconnect', (reason) => {
+      console.log('Disconnected from multiplayer server. Reason:', reason);
       setIsConnected(false);
-      setIsInRoom(false);
-      setRoomCode(null);
-      setIsHost(false);
-      setMembers([]);
-      setChat([]);
-      console.log('Disconnected from multiplayer server');
+      
+      // Don't immediately clear room state on disconnect
+      // Let reconnection handle it
+      if (reason === 'io server disconnect' || reason === 'io client disconnect') {
+        // Only clear state if server deliberately disconnected or client disconnected
+        setIsInRoom(false);
+        setRoomCode(null);
+        setIsHost(false);
+        setMembers([]);
+        setChat([]);
+      }
+    });
+
+    // Handle successful reconnection
+    newSocket.on('reconnect', (attemptNumber) => {
+      console.log('Successfully reconnected to multiplayer server after', attemptNumber, 'attempts');
+      setIsConnected(true);
+    });
+
+    // Handle reconnection attempts
+    newSocket.on('reconnect_attempt', (attemptNumber) => {
+      console.log('Attempting to reconnect... Attempt:', attemptNumber);
+    });
+
+    // Handle reconnection errors
+    newSocket.on('reconnect_error', (error) => {
+      console.log('Reconnection failed:', error);
     });
 
     // Room events
