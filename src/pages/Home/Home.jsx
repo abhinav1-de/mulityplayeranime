@@ -10,6 +10,7 @@ import { useHomeInfo } from "@/src/context/HomeInfoContext.jsx";
 import Schedule from "@/src/components/schedule/Schedule";
 import ContinueWatching from "@/src/components/continue/ContinueWatching";
 import TabbedAnimeSection from "@/src/components/tabbed-anime/TabbedAnimeSection";
+import JoinRoomPanel from "@/src/components/multiplayer/JoinRoomPanel";
 
 function Home() {
   const { homeInfo, homeInfoLoading, error } = useHomeInfo();
@@ -18,6 +19,7 @@ function Home() {
   if (!homeInfo) return <Error error="404" />;
   return (
     <>
+      <JoinRoomPanel />
       <div className="pt-16 w-full">
         <Spotlight spotlights={homeInfo.spotlights} />
         <div className="mt-6">
