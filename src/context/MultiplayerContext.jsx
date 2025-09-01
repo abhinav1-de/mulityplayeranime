@@ -219,9 +219,13 @@ export const MultiplayerProvider = ({ children }) => {
     }
   };
 
-  const joinRoom = (code) => {
-    if (socket && nickname && code) {
-      socket.emit('joinRoom', { roomCode: code, nickname });
+  const joinRoom = (code, customNickname = null) => {
+    const nameToUse = customNickname || nickname;
+    if (socket && nameToUse && code) {
+      if (customNickname) {
+        setNickname(customNickname);
+      }
+      socket.emit('joinRoom', { roomCode: code, nickname: nameToUse });
     }
   };
 
