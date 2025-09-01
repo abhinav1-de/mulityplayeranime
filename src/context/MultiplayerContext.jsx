@@ -39,7 +39,7 @@ export const MultiplayerProvider = ({ children }) => {
 
   useEffect(() => {
     // Initialize socket connection to Railway server
-    const serverUrl = 'https://server-production-9ee4.up.railway.app';
+    const serverUrl = 'https://server-bkur.onrender.com/';
     const newSocket = io(serverUrl);
     
     newSocket.on('connect', () => {
