@@ -101,7 +101,11 @@ export default function Player({
 
       switch (roomVideoState.type) {
         case "play":
-          art.currentTime = roomVideoState.currentTime;
+          // Only sync time if there's a significant difference (more than 2 seconds)
+          const timeDiff = Math.abs(art.currentTime - roomVideoState.currentTime);
+          if (timeDiff > 2) {
+            art.currentTime = roomVideoState.currentTime;
+          }
           art.play();
           break;
         case "pause":
