@@ -28,6 +28,8 @@ export default function WatchControls({
   episodeId,
   episodes = [],
   onButtonClick,
+  isInRoom = false,
+  isHost = false,
 }) {
   const [currentEpisodeIndex, setCurrentEpisodeIndex] = useState(
     episodes?.findIndex(
@@ -66,35 +68,37 @@ export default function WatchControls({
       <div className="flex items-center gap-x-2">
         <button
           onClick={() => {
-            if (currentEpisodeIndex > 0) {
+            if (currentEpisodeIndex > 0 && (!isInRoom || isHost)) {
               onButtonClick(
                 episodes[currentEpisodeIndex - 1].id.match(/ep=(\d+)/)?.[1]
               );
             }
           }}
-          disabled={currentEpisodeIndex <= 0}
+          disabled={currentEpisodeIndex <= 0 || (isInRoom && !isHost)}
           className={`w-7 h-7 flex items-center justify-center rounded transition-colors ${
-            currentEpisodeIndex <= 0 
+            currentEpisodeIndex <= 0 || (isInRoom && !isHost)
               ? "text-gray-600 cursor-not-allowed" 
               : "text-gray-300 hover:text-white"
           }`}
+          title={isInRoom && !isHost ? "Only the host can change episodes" : "Previous episode"}
         >
           <FontAwesomeIcon icon={faBackward} className="text-[14px]" />
         </button>
         <button
           onClick={() => {
-            if (currentEpisodeIndex < episodes?.length - 1) {
+            if (currentEpisodeIndex < episodes?.length - 1 && (!isInRoom || isHost)) {
               onButtonClick(
                 episodes[currentEpisodeIndex + 1].id.match(/ep=(\d+)/)?.[1]
               );
             }
           }}
-          disabled={currentEpisodeIndex >= episodes?.length - 1}
+          disabled={currentEpisodeIndex >= episodes?.length - 1 || (isInRoom && !isHost)}
           className={`w-7 h-7 flex items-center justify-center rounded transition-colors ${
-            currentEpisodeIndex >= episodes?.length - 1 
+            currentEpisodeIndex >= episodes?.length - 1 || (isInRoom && !isHost)
               ? "text-gray-600 cursor-not-allowed" 
               : "text-gray-300 hover:text-white"
           }`}
+          title={isInRoom && !isHost ? "Only the host can change episodes" : "Next episode"}
         >
           <FontAwesomeIcon icon={faForward} className="text-[14px]" />
         </button>
