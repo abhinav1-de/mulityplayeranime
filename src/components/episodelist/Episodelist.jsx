@@ -15,6 +15,8 @@ function Episodelist({
   onEpisodeClick,
   currentEpisode,
   totalEpisodes,
+  isInRoom = false,
+  isHost = false,
 }) {
   const [activeEpisodeId, setActiveEpisodeId] = useState(currentEpisode);
   const { language } = useLanguage();
@@ -227,26 +229,29 @@ function Episodelist({
                     <div
                       key={item?.id}
                       ref={isActive ? activeEpisodeRef : null}
-                      className={`flex items-center justify-center rounded-lg h-[35px] text-[13px] font-medium cursor-pointer transition-all max-[600px]:h-[30px] max-[600px]:text-[12px] ${
+                      className={`flex items-center justify-center rounded-lg h-[35px] text-[13px] font-medium transition-all max-[600px]:h-[30px] max-[600px]:text-[12px] ${
+                        isInRoom && !isHost 
+                          ? 'cursor-not-allowed opacity-60' 
+                          : 'cursor-pointer hover:bg-[#404040] hover:text-white'
+                      } ${
                         item?.filler
                           ? isActive
                             ? "bg-white text-black"
                             : "bg-[#2a2a2a] text-gray-400"
                           : ""
-                      } hover:bg-[#404040] 
-                          hover:text-white
-                       ${
+                       } ${
                          isActive
                            ? "bg-white text-black ring-1 ring-white"
                            : "bg-[#2a2a2a] text-gray-400"
                        } ${isSearched ? "ring-2 ring-white" : ""}`}
                       onClick={() => {
-                        if (episodeNumber) {
+                        if (episodeNumber && (!isInRoom || isHost)) {
                           onEpisodeClick(episodeNumber);
                           setActiveEpisodeId(episodeNumber);
                           setSearchedEpisode(null);
                         }
                       }}
+                      title={isInRoom && !isHost ? "Only the host can change episodes" : ""}
                     >
                       <span className="transition-colors">
                         {index + selectedRange[0]}
@@ -265,20 +270,23 @@ function Episodelist({
                   <div
                     key={item?.id}
                     ref={isActive ? activeEpisodeRef : null}
-                    className={`w-full px-4 py-2.5 flex items-center justify-start gap-x-4 cursor-pointer transition-all max-[600px]:px-3 max-[600px]:py-2 max-[600px]:gap-x-3 ${
+                    className={`w-full px-4 py-2.5 flex items-center justify-start gap-x-4 transition-all max-[600px]:px-3 max-[600px]:py-2 max-[600px]:gap-x-3 ${
+                      isInRoom && !isHost ? 'cursor-not-allowed opacity-60' : 'cursor-pointer hover:bg-[#2a2a2a]'
+                    } ${
                       (index + 1) % 2 && !isActive
                         ? "bg-[#202020]"
                         : "bg-[#1a1a1a]"
-                    } hover:bg-[#2a2a2a] ${
+                    } ${
                       isActive ? "bg-[#2a2a2a]" : ""
                     } ${isSearched ? "ring-1 ring-white" : ""}`}
                     onClick={() => {
-                      if (episodeNumber) {
+                      if (episodeNumber && (!isInRoom || isHost)) {
                         onEpisodeClick(episodeNumber);
                         setActiveEpisodeId(episodeNumber);
                         setSearchedEpisode(null);
                       }
                     }}
+                    title={isInRoom && !isHost ? "Only the host can change episodes" : ""}
                   >
                     <p className={`text-[14px] font-medium max-[600px]:text-[13px] ${isActive ? "text-white" : "text-gray-400"}`}>
                       {index + 1}
