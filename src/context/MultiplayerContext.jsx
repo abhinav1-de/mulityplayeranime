@@ -48,7 +48,7 @@ export const MultiplayerProvider = ({ children }) => {
     if (!nickname) {
       setNickname(`Guest-${Math.floor(1000 + Math.random() * 9000)}`);
     }
-  }, [nickname]);
+  }, []);
 
   useEffect(() => {
     // Initialize socket connection to multiplayer server
@@ -215,6 +215,7 @@ export const MultiplayerProvider = ({ children }) => {
   // Functions to interact with multiplayer
   const createRoom = () => {
     if (socket && nickname) {
+      console.log('Creating room with nickname:', nickname);
       socket.emit('createRoom', { nickname });
     }
   };
@@ -225,6 +226,7 @@ export const MultiplayerProvider = ({ children }) => {
       if (customNickname) {
         setNickname(customNickname);
       }
+      console.log('Joining room with nickname:', nameToUse);
       socket.emit('joinRoom', { roomCode: code, nickname: nameToUse });
     }
   };
