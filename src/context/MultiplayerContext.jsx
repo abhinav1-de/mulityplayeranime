@@ -1,4 +1,5 @@
 import { createContext, useContext, useEffect, useState, useRef } from 'react';
+import { useNavigate, useLocation } from 'react-router-dom';
 import { io } from 'socket.io-client';
 
 const MultiplayerContext = createContext();
@@ -12,6 +13,8 @@ export const useMultiplayer = () => {
 };
 
 export const MultiplayerProvider = ({ children }) => {
+  const navigate = useNavigate();
+  const location = useLocation();
   const [socket, setSocket] = useState(null);
   const [isConnected, setIsConnected] = useState(false);
   const [roomCode, setRoomCode] = useState(null);
@@ -29,6 +32,16 @@ export const MultiplayerProvider = ({ children }) => {
   // Refs to prevent duplicate syncing
   const playerRef = useRef(null);
   const isUpdatingFromSync = useRef(false);
+  
+  // Refs for navigation to avoid useEffect dependency issues
+  const navigateRef = useRef(navigate);
+  const locationRef = useRef(location);
+  
+  // Update refs when values change
+  useEffect(() => {
+    navigateRef.current = navigate;
+    locationRef.current = location;
+  }, [navigate, location]);
 
   useEffect(() => {
     // Generate random nickname if not set
@@ -110,8 +123,12 @@ export const MultiplayerProvider = ({ children }) => {
       
       // If there's a current episode, sync to it
       if (data.currentEpisode && data.animeId) {
-        // Emit episode change to sync new user
-        window.location.href = `/watch/${data.animeId}?ep=${data.currentEpisode}&room=${data.roomCode}`;
+        // Use React Router navigation instead of hard reload
+        const newUrl = `/watch/${data.animeId}?ep=${data.currentEpisode}&room=${data.roomCode}`;
+        const currentLocation = locationRef.current;
+        if (currentLocation.pathname + currentLocation.search !== newUrl) {
+          navigateRef.current(newUrl);
+        }
       }
     });
 
@@ -160,11 +177,11 @@ export const MultiplayerProvider = ({ children }) => {
     // Episode change events
     newSocket.on('changeEpisode', (data) => {
       const { episodeId, animeId } = data;
-      const currentUrl = new URL(window.location);
       const newUrl = `/watch/${animeId}?ep=${episodeId}&room=${roomCode}`;
+      const currentLocation = locationRef.current;
       
-      if (currentUrl.pathname + currentUrl.search !== newUrl) {
-        window.location.href = newUrl;
+      if (currentLocation.pathname + currentLocation.search !== newUrl) {
+        navigateRef.current(newUrl);
       }
     });
 
@@ -173,9 +190,19 @@ export const MultiplayerProvider = ({ children }) => {
       setChat(prev => [...prev, message]);
     });
 
+    // Room left event (when user successfully leaves)
+    newSocket.on('roomLeft', () => {
+      setIsInRoom(false);
+      setRoomCode(null);
+      setIsHost(false);
+      setMembers([]);
+      setChat([]);
+    });
+
     // Error handling
     newSocket.on('error', (error) => {
       setRoomError(error.message);
+      console.error('Multiplayer error:', error);
     });
 
     setSocket(newSocket);
@@ -200,17 +227,21 @@ export const MultiplayerProvider = ({ children }) => {
 
   const leaveRoom = () => {
     if (socket && roomCode) {
-      socket.disconnect();
+      // Emit leave room event instead of disconnecting socket
+      socket.emit('leaveRoom', { roomCode });
       setIsInRoom(false);
       setRoomCode(null);
       setIsHost(false);
       setMembers([]);
       setChat([]);
       
-      // Remove room parameter from URL
-      const url = new URL(window.location);
-      url.searchParams.delete('room');
-      window.history.replaceState({}, '', url);
+      // Remove room parameter from URL using React Router
+      const currentLocation = locationRef.current;
+      const searchParams = new URLSearchParams(currentLocation.search);
+      searchParams.delete('room');
+      const newSearch = searchParams.toString();
+      const newUrl = currentLocation.pathname + (newSearch ? `?${newSearch}` : '');
+      navigateRef.current(newUrl, { replace: true });
     }
   };
 
